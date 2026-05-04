@@ -42,7 +42,7 @@ export default function Academias() {
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10
+        marginBottom: -40
       }}>
 
         {/* USUÁRIO */}
@@ -57,9 +57,10 @@ export default function Academias() {
         <Image
           source={require('../assets/images/logo.png')}
           style={{
-            width: 70,
-            height: 70,
-            marginLeft: 'auto' // 🔥 empurra pro canto direito
+            width: 550,
+            height: 150,
+            marginLeft: 'auto', //  empurra pro canto direito
+            marginRight: -10
           }}
           resizeMode="contain"
         />

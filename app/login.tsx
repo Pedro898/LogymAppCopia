@@ -15,7 +15,7 @@ export default function Login() {
 
       {/* ================= LOGO COM GLOW ================= */}
       <Image
-        source={require('../assets/images/logo.png')}
+        source={require('../assets/images/logo.png')} 
         style={{
           width: 290,
           height: 290,
