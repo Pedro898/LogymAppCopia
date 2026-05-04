@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Linking } from 'react-native'; // 🔥 IMPORTANTE PARA LINKS
+import { Linking } from 'react-native'; // IMPORTANTE PARA LINKS
 
 export default function Login() {
 
