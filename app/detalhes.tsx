@@ -39,7 +39,7 @@ export default function Detalhes() {
         fontSize: 18,
         marginTop: 10
       }}>
-        📍 {cidade}
+         {cidade}
       </Text>
 
     </View>

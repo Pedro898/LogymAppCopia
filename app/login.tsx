@@ -1,5 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Linking } from 'react-native'; // 🔥 IMPORTANTE PARA LINKS
 
 export default function Login() {
 
@@ -7,13 +8,13 @@ export default function Login() {
 
   return (
     <View style={{
-      flex: 1, // ocupa toda tela
-      backgroundColor: '#000000', // fundo preto
+      flex: 1,
+      backgroundColor: '#000000',
       justifyContent: 'center',
       padding: 25
     }}>
 
-      {/* ================= LOGO COM GLOW ================= */}
+      {/* ================= LOGO ================= */}
       <Image
         source={require('../assets/images/logo.png')} 
         style={{
@@ -22,7 +23,6 @@ export default function Login() {
           alignSelf: 'center',
           marginBottom: -30,
 
-          // efeito glow (brilho)
           shadowColor: '#f97316',
           shadowOffset: { width: 0, height: 0 },
           shadowOpacity: 0,
@@ -30,24 +30,19 @@ export default function Login() {
         }}
       />
 
-
       {/* ================= CARD ================= */}
       <View style={{
         backgroundColor: '#000000',
         padding: 20,
         borderRadius: 25,
 
-        // sombra do card
         shadowColor: '#000',
         shadowOpacity: 0.3,
         shadowRadius: 10
       }}>
 
         {/* ================= EMAIL ================= */}
-        <Text style={{
-          color: '#ffffff',
-          marginBottom: 5
-        }}>
+        <Text style={{ color: '#ffffff', marginBottom: 5 }}>
           Email
         </Text>
 
@@ -64,10 +59,7 @@ export default function Login() {
         />
 
         {/* ================= SENHA ================= */}
-        <Text style={{
-          color: '#ffffff',
-          marginBottom: 5
-        }}>
+        <Text style={{ color: '#ffffff', marginBottom: 5 }}>
           Senha
         </Text>
 
@@ -80,11 +72,23 @@ export default function Login() {
             color: '#fff',
             padding: 15,
             borderRadius: 12,
-            marginBottom: 25
+            marginBottom: 10
           }}
         />
 
-        {/* ================= BOTÃO de entrar ================= */}
+        {/* ================= ESQUECEU SENHA ================= */}
+        <Text
+          onPress={() => Linking.openURL('https://meusite.com/esqueci-senha')}
+          style={{
+            color: '#f97316',
+            textAlign: 'right',
+            marginBottom: 20
+          }}
+        >
+          Esqueceu a senha?
+        </Text>
+
+        {/* ================= BOTÃO ================= */}
         <TouchableOpacity
           onPress={() => router.replace('/academias')}
           style={{
@@ -93,7 +97,6 @@ export default function Login() {
             borderRadius: 15,
             alignItems: 'center',
 
-            // sombra do botão
             shadowColor: '#f97316',
             shadowOpacity: 0.6,
             shadowRadius: 10
@@ -107,6 +110,26 @@ export default function Login() {
             Entrar
           </Text>
         </TouchableOpacity>
+
+        {/* ================= CADASTRAR ================= */}
+        <Text style={{
+          color: '#fff',
+          marginTop: 20,
+          textAlign: 'center'
+        }}>
+          Ainda não possui uma conta?{' '}
+          
+          <Text
+            onPress={() => Linking.openURL('https://meusite.com/cadastro')}
+            style={{
+              color: '#f97316',
+              fontWeight: 'bold',
+              textDecorationLine: 'underline'
+            }}
+          >
+            Cadastre-se
+          </Text>
+        </Text>
 
       </View>
 
