@@ -1,10 +1,38 @@
-import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
+import { buscarUsuarioLogado, login } from '@/lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { Linking } from 'react-native'; // IMPORTANTE PARA LINKS
+import { useState } from 'react';
+import { Image, Linking, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function Login() {
+  const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState('');
 
-  const router = useRouter(); // navegação
+  async function entrar() {
+    setErro('');
+
+    if (!username || !password) {
+      setErro('Preencha usuario e senha.');
+      return;
+    }
+
+    try {
+      setCarregando(true);
+      await login(username, password);
+
+      const usuario = await buscarUsuarioLogado();
+      await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
+
+      router.replace('/academias');
+    } catch (error) {
+      setErro('Usuario ou senha invalidos.');
+    } finally {
+      setCarregando(false);
+    }
+  }
 
   return (
     <View style={{
@@ -13,16 +41,13 @@ export default function Login() {
       justifyContent: 'center',
       padding: 25
     }}>
-
-      {/* ================= LOGO ================= */}
       <Image
-        source={require('../assets/images/logo.png')} 
+        source={require('../assets/images/logo.png')}
         style={{
           width: 290,
           height: 290,
           alignSelf: 'center',
           marginBottom: -30,
-
           shadowColor: '#f97316',
           shadowOffset: { width: 0, height: 0 },
           shadowOpacity: 0,
@@ -30,25 +55,24 @@ export default function Login() {
         }}
       />
 
-      {/* ================= CARD ================= */}
       <View style={{
         backgroundColor: '#000000',
         padding: 20,
         borderRadius: 25,
-
         shadowColor: '#000',
         shadowOpacity: 0.3,
         shadowRadius: 10
       }}>
-
-        {/* ================= EMAIL ================= */}
         <Text style={{ color: '#ffffff', marginBottom: 5 }}>
-          Email
+          Usuario
         </Text>
 
         <TextInput
-          placeholder="Digite seu email"
+          placeholder="Digite seu usuario"
           placeholderTextColor="#ffffff"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
           style={{
             backgroundColor: '#8b8a8a',
             color: '#fff',
@@ -58,7 +82,6 @@ export default function Login() {
           }}
         />
 
-        {/* ================= SENHA ================= */}
         <Text style={{ color: '#ffffff', marginBottom: 5 }}>
           Senha
         </Text>
@@ -67,6 +90,8 @@ export default function Login() {
           placeholder="Digite sua senha"
           placeholderTextColor="#ffffff"
           secureTextEntry
+          value={password}
+          onChangeText={setPassword}
           style={{
             backgroundColor: '#8b8a8a',
             color: '#fff',
@@ -76,7 +101,15 @@ export default function Login() {
           }}
         />
 
-        {/* ================= ESQUECEU SENHA ================= */}
+        {erro ? (
+          <Text style={{
+            color: '#ffb4b4',
+            marginBottom: 12
+          }}>
+            {erro}
+          </Text>
+        ) : null}
+
         <Text
           onPress={() => Linking.openURL('https://meusite.com/esqueci-senha')}
           style={{
@@ -88,15 +121,14 @@ export default function Login() {
           Esqueceu a senha?
         </Text>
 
-        {/* ================= BOTÃO ================= */}
         <TouchableOpacity
-          onPress={() => router.replace('/academias')}
+          onPress={entrar}
+          disabled={carregando}
           style={{
-            backgroundColor: '#f97316',
+            backgroundColor: carregando ? '#9a4d12' : '#f97316',
             padding: 18,
             borderRadius: 15,
             alignItems: 'center',
-
             shadowColor: '#f97316',
             shadowOpacity: 0.6,
             shadowRadius: 10
@@ -107,18 +139,17 @@ export default function Login() {
             fontWeight: 'bold',
             fontSize: 16
           }}>
-            Entrar
+            {carregando ? 'Entrando...' : 'Entrar'}
           </Text>
         </TouchableOpacity>
 
-        {/* ================= CADASTRAR ================= */}
         <Text style={{
           color: '#fff',
           marginTop: 20,
           textAlign: 'center'
         }}>
-          Ainda não possui uma conta?{' '}
-          
+          Ainda nao possui uma conta?{' '}
+
           <Text
             onPress={() => Linking.openURL('https://meusite.com/cadastro')}
             style={{
@@ -130,9 +161,7 @@ export default function Login() {
             Cadastre-se
           </Text>
         </Text>
-
       </View>
-
     </View>
   );
 }
