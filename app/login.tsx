@@ -22,13 +22,24 @@ export default function Login() {
     try {
       setCarregando(true);
       await login(username, password);
+    } catch {
+      setErro('Usuario ou senha invalidos.');
+      setCarregando(false);
+      return;
+    }
 
+    try {
       const usuario = await buscarUsuarioLogado();
       await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
 
       router.replace('/academias');
     } catch (error) {
-      setErro('Usuario ou senha invalidos.');
+      const mensagem = error instanceof Error ? error.message : '';
+      setErro(
+        mensagem.includes('Failed to fetch') || mensagem.includes('Network request failed')
+          ? 'Nao foi possivel conectar ao backend. Confira o endereco da API.'
+          : 'Login realizado, mas nao foi possivel carregar o usuario.'
+      );
     } finally {
       setCarregando(false);
     }
