@@ -1,4 +1,4 @@
-import { buscarUsuarioLogado, login } from '@/lib/api';
+import { login, type Usuario } from '@/lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -11,6 +11,19 @@ export default function Login() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
 
+  function criarUsuarioLocal(): Usuario {
+    const usuarioDigitado = username.trim();
+    const nome = usuarioDigitado.includes('@')
+      ? usuarioDigitado.split('@')[0]
+      : usuarioDigitado;
+
+    return {
+      id: usuarioDigitado,
+      nome: nome || 'Usuario',
+      username: usuarioDigitado,
+    };
+  }
+
   async function entrar() {
     setErro('');
 
@@ -21,27 +34,22 @@ export default function Login() {
 
     try {
       setCarregando(true);
-      await login(username, password);
-    } catch {
-      setErro('Usuario ou senha invalidos.');
-      setCarregando(false);
-      return;
-    }
+      const resposta = await login(username, password);
+      const usuarioLogado = resposta.usuario || criarUsuarioLocal();
 
-    try {
-      const usuario = await buscarUsuarioLogado();
-      await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
-
+      await AsyncStorage.setItem('usuario', JSON.stringify(usuarioLogado));
       router.replace('/academias');
     } catch (error) {
       const mensagem = error instanceof Error ? error.message : '';
       setErro(
-        mensagem.includes('Failed to fetch') || mensagem.includes('Network request failed')
+        mensagem.includes('Failed to fetch') ||
+          mensagem.includes('Network request failed') ||
+          mensagem.includes('Tempo esgotado')
           ? 'Nao foi possivel conectar ao backend. Confira o endereco da API.'
-          : 'Login realizado, mas nao foi possivel carregar o usuario.'
+          : 'Usuario ou senha invalidos.'
       );
-    } finally {
       setCarregando(false);
+      return;
     }
   }
 

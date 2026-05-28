@@ -13,15 +13,26 @@ export type Academia = {
 };
 
 export type Usuario = {
-  id: string;
+  id: string | number;
   nome: string;
   username: string;
   nivelAcesso?: string;
   statusUsuario?: string;
 };
 
+export function formatarNomeUsuario(usuario: Usuario | null) {
+  const primeiroNome = (usuario?.nome || usuario?.username || 'Usuario')
+    .trim()
+    .split(/\s+/)[0]
+    .toLowerCase();
+
+  return primeiroNome.charAt(0).toUpperCase() + primeiroNome.slice(1);
+}
+
 type LoginResponse = {
   message?: string;
+  mensagem?: string;
+  usuario?: Usuario;
 };
 
 function removerBarraFinal(url: string) {
@@ -39,15 +50,15 @@ function buscarApiUrl() {
 
   const hostUri =
     Constants.expoConfig?.hostUri ||
-    (Constants as { manifest?: { debuggerHost?: string } }).manifest?.debuggerHost ||
-    (Constants as { manifest2?: { extra?: { expoClient?: { hostUri?: string } } } }).manifest2?.extra?.expoClient?.hostUri;
+    (Constants as any).manifest?.debuggerHost ||
+    (Constants as any).manifest2?.extra?.expoClient?.hostUri;
 
   const host = hostUri?.split(':')[0];
 
   if (host && host !== 'localhost' && host !== '127.0.0.1') {
     return `http://${host}:8080`;
   }
-
+ 
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:8080';
   }
@@ -56,19 +67,34 @@ function buscarApiUrl() {
 }
 
 const API_URL = buscarApiUrl();
-
-export const apiConfigurada = Boolean(API_URL);
+const REQUEST_TIMEOUT_MS = 10000;
 
 async function request<T>(rota: string, options: RequestInit = {}): Promise<T> {
-  const resposta = await fetch(`${API_URL}${rota}`, {
-    credentials: 'include',
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let resposta: Response;
+
+  try {
+    resposta = await fetch(`${API_URL}${rota}`, {
+      credentials: 'include',
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Tempo esgotado ao conectar com o backend.');
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!resposta.ok) {
     const mensagem = await resposta.text();
@@ -76,61 +102,15 @@ async function request<T>(rota: string, options: RequestInit = {}): Promise<T> {
   }
 
   const texto = await resposta.text();
-
-  if (!texto) {
-    return undefined as T;
-  }
-
-  try {
-    return JSON.parse(texto) as T;
-  } catch {
-    return texto as T;
-  }
-}
-
-export async function listarAcademias() {
-  return request<Academia[]>('/academias');
-}
-
-export async function buscarAcademia(id: string) {
-  return request<Academia>(`/academias/${id}`);
+  return texto ? (JSON.parse(texto) as T) : (undefined as T);
 }
 
 export async function login(username: string, password: string) {
-  const params = new URLSearchParams();
-  const usuario = username.trim();
-
-  params.append('username', usuario);
-  params.append('email', usuario);
-  params.append('password', password);
-  params.append('senha', password);
-
-  return request<LoginResponse>('/login', {
+  return request<LoginResponse>('/auth/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
-  });
-}
-
-export async function buscarUsuarioLogado() {
-  return request<Usuario>('/usuarios/me');
-}
-
-export async function listarFavoritos(usuarioId: string) {
-  return request<string[]>(`/usuarios/${usuarioId}/favoritos`);
-}
-
-export async function adicionarFavorito(usuarioId: string, academiaId: string) {
-  return request<void>(`/usuarios/${usuarioId}/favoritos`, {
-    method: 'POST',
-    body: JSON.stringify({ academiaId }),
-  });
-}
-
-export async function removerFavorito(usuarioId: string, academiaId: string) {
-  return request<void>(`/usuarios/${usuarioId}/favoritos/${academiaId}`, {
-    method: 'DELETE',
+    body: JSON.stringify({
+      username: username.trim(),
+      password,
+    }),
   });
 }

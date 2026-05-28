@@ -1,64 +1,71 @@
-import {View, Text, Image, FlatList, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// IMPORTA useState
-import { useState } from 'react';
-// IMPORTA NAVEGAÇÃO
-import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  FlatList,
+  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+
+import { academiasLocais, getAcademiaImagem } from '@/constants/academias';
+import { formatarNomeUsuario, type Usuario } from '@/lib/api';
 
 export default function Academias() {
-
-  // MENU LATERAL 
-
-  const [menuAberto, setMenuAberto] = useState(false);
-
-  // NAVEGAÇÃO 
-
   const router = useRouter();
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
 
-  // DADOS DAS ACADEMIAS 
+  useFocusEffect(
+    useCallback(() => {
+      async function carregarDadosLocais() {
+        const [favoritosSalvos, usuarioSalvo] = await Promise.all([
+          AsyncStorage.getItem('favoritos'),
+          AsyncStorage.getItem('usuario'),
+        ]);
 
-  const academias = [
-    {
-      id: '1',
-      nome: 'SMART FIT',
-      endereco: 'Av. Vinte e Seis de Março, 701 Centro',
-      cidade: 'Barueri, SP',
-      cep: '06401-050',
-      imagem: require('../assets/images/gym1.jpeg')
-    },
-    {
-      id: '2',
-      nome: 'BLUE FIT',
-      endereco: 'Av. Trindade, 344 Bethaville I',
-      cidade: 'Barueri, SP',
-      cep: '06404-326',
-      imagem: require('../assets/images/gym2.webp')
-    },
-    {
-      id: '3',
-      nome: 'BIO RITMO',
-      endereco: 'Av. Piracema, 669 - Tamboré',
-      cidade: 'Barueri, SP',
-      cep: '06460-030',
-      imagem: require('../assets/images/gym3.jpg')
-    }
-  ];
+        setFavoritos(favoritosSalvos ? JSON.parse(favoritosSalvos) : []);
+        setUsuario(usuarioSalvo ? JSON.parse(usuarioSalvo) : null);
+      }
+
+      carregarDadosLocais();
+    }, [])
+  );
+
+  const academiasFiltradas = academiasLocais.filter((academia) => {
+    const texto = `${academia.nome} ${academia.endereco} ${academia.cidade}`.toLowerCase();
+    return texto.includes(busca.toLowerCase());
+  });
+
+  async function alternarFavorito(id: string) {
+    const novosFavoritos = favoritos.includes(id)
+      ? favoritos.filter((favoritoId) => favoritoId !== id)
+      : [...favoritos, id];
+
+    setFavoritos(novosFavoritos);
+    await AsyncStorage.setItem('favoritos', JSON.stringify(novosFavoritos));
+  }
+
+  async function sair() {
+    await AsyncStorage.removeItem('usuario');
+    router.replace('/login');
+  }
+
+  const nomeUsuario = formatarNomeUsuario(usuario);
 
   return (
-
-// TELA PRINCIPAL 
-
     <View style={{
       flex: 1,
       backgroundColor: '#000',
       paddingTop: 20,
-      paddingHorizontal: 15
+      paddingHorizontal: 15,
     }}>
-
-{/*  MENU LATERAL */}
-
       {menuAberto && (
-
         <View style={{
           position: 'absolute',
           top: 0,
@@ -70,183 +77,102 @@ export default function Academias() {
           borderRightColor: '#f97316',
           zIndex: 999,
           paddingTop: 80,
-          paddingHorizontal: 15
+          paddingHorizontal: 15,
         }}>
+          <TouchableOpacity
+            onPress={() => setMenuAberto(false)}
+            style={{
+              position: 'absolute',
+              top: 40,
+              right: 20,
+              zIndex: 1000,
+            }}
+          >
+            <Ionicons name="close-outline" size={35} color="white" />
+          </TouchableOpacity>
 
-{/*Botão fechar navbar*/}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 30,
+          }}>
+            <Ionicons name="person-circle-outline" size={55} color="#fff" />
+            <View style={{ marginLeft: 10 }}>
+              <Text style={{
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: 20,
+              }}>
+                Olá, {nomeUsuario}
+              </Text>
+              <Text style={{ color: '#ccc' }}>{usuario?.username || 'logym@app'}</Text>
+            </View>
+          </View>
 
           <TouchableOpacity
-          onPress={()=> setMenuAberto(false)}
-          style={{
-            position: 'absolute',
-            top: 40,
-            right: 20,
-            zIndex: 1000
-          }}
+            onPress={() => router.push('/perfil')}
+            style={{
+              backgroundColor: '#fff',
+              padding: 10,
+              borderRadius: 18,
+              marginBottom: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
           >
-         <Ionicons
-        name="close-outline"
-        size={35}
-       color="white"
-       />
-      </TouchableOpacity>
-
-{/* PERFIL */}
-
-     <View style={{
-     flexDirection: 'row',
-     alignItems: 'center',
-     marginBottom: 30
-   }}>
-
-   <Ionicons
-   name="person-circle-outline"
-   size={55}
-   color="#fff"
-   />
-   <View style={{ marginLeft: 10 }}>
-   <Text style={{
-   color: '#fff',
-   fontWeight: 'bold',
-   fontSize: 20
-   }}>
-   Olá, Yuri
-</Text>
-
-<Text style={{
-   color: '#ccc'
-  }}>
- yuri@gmail.com
- </Text>
- </View>
- </View>
-
-{/* BOTÃO PERFIL */}
-
-          <TouchableOpacity style={{
-            backgroundColor: '#fff',
-            padding: 10,
-            borderRadius: 18,
-            marginBottom: 12,
-            flexDirection: 'row',
-            alignItems: 'center'
-          }}>
-
-            <Ionicons
-              name="person-outline"
-              size={24}
-              color="#000"
-            />
-
-            <Text style={{
-              fontWeight: 'bold',
-              fontSize: 15,
-              marginLeft: 10
-            }}>
+            <Ionicons name="person-outline" size={24} color="#000" />
+            <Text style={{ fontWeight: 'bold', fontSize: 15, marginLeft: 10 }}>
               MEU PERFIL
             </Text>
-
           </TouchableOpacity>
-
-{/* BOTÃO FAVORITOS */}
-
-          <TouchableOpacity style={{
-            backgroundColor: '#fff',
-            padding: 10,
-            borderRadius: 18,
-            marginBottom: 12,
-            flexDirection: 'row',
-            alignItems: 'center'
-          }}>
-
-            <Ionicons
-              name="star"
-              size={20}
-              color="#facc15"
-            />
-
-            <Text style={{
-              fontWeight: 'bold',
-              fontSize: 15,
-              marginLeft: 10
-            }}>
-              FAVORITOS
-            </Text>
-
-          </TouchableOpacity>
-
-{/* BOTÃO SAIR */}
 
           <TouchableOpacity
+            onPress={() => router.push('/favoritos')}
+            style={{
+              backgroundColor: '#fff',
+              padding: 10,
+              borderRadius: 18,
+              marginBottom: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+            }}
+          >
+            <Ionicons name="star" size={20} color="#facc15" />
+            <Text style={{ fontWeight: 'bold', fontSize: 15, marginLeft: 10 }}>
+              FAVORITOS
+            </Text>
+          </TouchableOpacity>
 
-            // VOLTA PARA LOGIN
-
-            onPress={() => router.replace('/login')}
+          <TouchableOpacity
+            onPress={sair}
             style={{
               backgroundColor: '#fff',
               padding: 10,
               borderRadius: 18,
               flexDirection: 'row',
-              alignItems: 'center'
+              alignItems: 'center',
             }}
           >
-
-            <Ionicons
-              name="log-out-outline"
-              size={20}
-              color="#000"
-            />
-
-            <Text style={{
-              fontWeight: 'bold',
-              fontSize: 15,
-              marginLeft: 10
-            }}>
+            <Ionicons name="log-out-outline" size={20} color="#000" />
+            <Text style={{ fontWeight: 'bold', fontSize: 15, marginLeft: 10 }}>
               SAIR
             </Text>
-
           </TouchableOpacity>
-
         </View>
-
       )}
-
-{/* TOPO */}
 
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: -40
+        marginBottom: -40,
       }}>
-
-{/* USUÁRIO */}
-
-       <TouchableOpacity
-       onPress={()=> setMenuAberto(!menuAberto)}
-       style={{
-        flexDirection: 'row',
-        alignItems: 'center'
-       }}
-       >
-
-{/* ÍCONE PERFIL */}
-
-         <Ionicons
-         name="person-circle-outline"
-         size={40}
-         color="#fff"
-         />
-         {/*Nome*/}
-         <Text style={{
-          color: '#fff',
-          marginLeft: 5
-         }}>
-          
-           Yuri
-         </Text>
-       </TouchableOpacity>
-
- {/* LOGO */}
+        <TouchableOpacity
+          onPress={() => setMenuAberto(!menuAberto)}
+          style={{ flexDirection: 'row', alignItems: 'center' }}
+        >
+          <Ionicons name="person-circle-outline" size={40} color="#fff" />
+          <Text style={{ color: '#fff', marginLeft: 5 }}>{nomeUsuario}</Text>
+        </TouchableOpacity>
 
         <Image
           source={require('../assets/images/logo.png')}
@@ -254,14 +180,11 @@ export default function Academias() {
             width: 550,
             height: 150,
             marginLeft: 'auto',
-            marginRight: -10
+            marginRight: -10,
           }}
           resizeMode="contain"
         />
-
       </View>
-
- {/* BUSCA */}
 
       <View style={{
         flexDirection: 'row',
@@ -269,115 +192,60 @@ export default function Academias() {
         backgroundColor: '#111',
         borderRadius: 20,
         paddingHorizontal: 15,
-        marginBottom: 15
+        marginBottom: 15,
       }}>
-
-        <Ionicons
-          name="search"
-          size={20}
-          color="#888"
-        />
-
+        <Ionicons name="search" size={20} color="#888" />
         <TextInput
           placeholder="Localizar academias"
           placeholderTextColor="#888"
-          style={{
-            flex: 1,
-            color: '#fff',
-            marginLeft: 10
-          }}
+          value={busca}
+          onChangeText={setBusca}
+          style={{ flex: 1, color: '#fff', marginLeft: 10 }}
         />
-
-        <Ionicons
-          name="ellipsis-vertical"
-          size={20}
-          color="#888"
-        />
-
+        <Ionicons name="ellipsis-vertical" size={20} color="#888" />
       </View>
 
- {/* LISTA */}
-
       <FlatList
-        data={academias}
+        data={academiasFiltradas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/detalhes', params: { id: item.id } })}
+            style={{
+              flexDirection: 'row',
+              backgroundColor: '#0a0a0a',
+              borderRadius: 20,
+              marginBottom: 15,
+              overflow: 'hidden',
+            }}
+          >
+            <Image source={getAcademiaImagem(item)} style={{ width: 120, height: 120 }} />
 
-          <View style={{
-            flexDirection: 'row',
-            backgroundColor: '#0a0a0a',
-            borderRadius: 20,
-            marginBottom: 15,
-            overflow: 'hidden'
-          }}>
-
- {/* IMAGEM */}
-
-            <Image
-              source={item.imagem}
-              style={{
-                width: 120,
-                height: 120
-              }}
-            />
-
-{/* TEXTO */}
-
-            <View style={{
-              flex: 1,
-              padding: 10
-            }}>
-
-              <Text style={{
-                color: '#f97316',
-                fontSize: 18,
-                fontWeight: 'bold'
-              }}>
+            <View style={{ flex: 1, padding: 10 }}>
+              <Text style={{ color: '#f97316', fontSize: 18, fontWeight: 'bold' }}>
                 {item.nome}
               </Text>
-
-              <Text style={{
-                color: '#ccc',
-                marginTop: 5
-              }}>
-                {item.endereco}
-              </Text>
-
-              <Text style={{
-                color: '#ccc'
-              }}>
-                {item.cidade}
-              </Text>
-
-              <Text style={{
-                color: '#f97316',
-                marginTop: 5
-              }}>
-                {item.cep}
-              </Text>
-
+              <Text style={{ color: '#ccc', marginTop: 5 }}>{item.endereco}</Text>
+              <Text style={{ color: '#ccc' }}>{item.cidade}</Text>
+              <Text style={{ color: '#f97316', marginTop: 5 }}>{item.cep}</Text>
             </View>
 
- {/* FAVORITAR */}
- 
-            <View style={{
-              justifyContent: 'flex-end',
-              padding: 10
-            }}>
-
+            <TouchableOpacity
+              onPress={(event) => {
+                event.stopPropagation();
+                alternarFavorito(item.id);
+              }}
+              style={{ justifyContent: 'flex-end', padding: 10 }}
+            >
               <Ionicons
-                name="star-outline"
+                name={favoritos.includes(item.id) ? 'star' : 'star-outline'}
                 size={24}
-                color="#f97316"
+                color="#facc15"
               />
-
-            </View>
-
-          </View>
-
+            </TouchableOpacity>
+          </TouchableOpacity>
         )}
       />
-
     </View>
   );
 }
